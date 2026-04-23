@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Recherche - Web Crawler</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Barre de navigation -->
+<nav class="topbar">
+    <div class="logo">📶 Maroc Telecom AI</div>
+    <div class="menu">
+        <a href="home.html">Accueil</a>
+        <a href="sources.html">Sources</a>
+        <a href="search.html" class="active">Recherche</a>
+        <a href="chatbot.html">Chatbot</a>
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+</nav>
+
+<!-- Contenu -->
+<div class="container">
+    <div class="search-box">
+        <input id="keyword" type="text" placeholder="Ex: AI, cybersecurity, cloud..." />
+        <button onclick="search()"><i class="fas fa-search"></i> Rechercher</button>
+    </div>
+
+    <div id="results" class="results"></div>
+</div>
+
+<script>
+function search() {
+    const q = document.getElementById("keyword").value.trim();
+    const resultsDiv = document.getElementById("results");
+
+    if (!q) {
+        alert("Entrez un mot-clé");
+        return;
+    }
+
+    resultsDiv.innerHTML = '<p class="loading"><i class="fas fa-spinner"></i> Recherche en cours...</p>';
+
+    fetch(`http://localhost:5000/search?q=${encodeURIComponent(q)}`)
+        .then(res => res.json())
+        .then(data => {
+            resultsDiv.innerHTML = "";
+
+            if (!Array.isArray(data) || data.length === 0) {
+                resultsDiv.innerHTML = "<p class='empty-state'><i class='fas fa-magnifying-glass'></i>Aucun résultat trouvé.</p>";
+                return;
+            }
+
+            data.forEach((item, idx) => {
+                const div = document.createElement("div");
+                div.className = "result-card";
+
+                const snippet = (item.content || "").substring(0, 300);
+                const fullContent = item.content || "";
+
+                div.innerHTML = `
+                    <h3>🌐 ${item.url}</h3>
+                    <p><b>Date:</b> ${item.crawled_at ? new Date(item.crawled_at).toLocaleString() : "?"}</p>
+                    <p><b>Mots-clés:</b> ${(item.keywords && item.keywords.length > 0) ? item.keywords.join(", ") : "Aucun"}</p>
+                    <p id="snippet-${idx}">${snippet}${fullContent.length > 300 ? "..." : ""}</p>
+                    ${fullContent.length > 300 ? `<button class="show-more-btn" onclick="toggleContent(${idx}, \`${fullContent}\`)">Voir plus</button>` : ""}
+                `;
+
+                resultsDiv.appendChild(div);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            resultsDiv.innerHTML = "<p>❌ Erreur lors de la recherche</p>";
+        });
+}
+
+function toggleContent(idx, fullText) {
+    const p = document.getElementById(`snippet-${idx}`);
+    const btn = p.nextElementSibling;
+    if (p.textContent.endsWith("...")) {
+        p.textContent = fullText;
+        if (btn) btn.textContent = "Voir moins";
+    } else {
+        p.textContent = fullText.substring(0, 300) + "...";
+        if (btn) btn.textContent = "Voir plus";
+    }
+}
+</script>
+
+</body>
+</html>

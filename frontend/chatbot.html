@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI Analyst Chatbot</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<nav class="topbar">
+    <div class="logo">🕷️ WebCrawler AI</div>
+    <div class="menu">
+        <a href="home.html">Accueil</a>
+        <a href="sources.html">Sources</a>
+        <a href="search.html">Recherche</a>
+        <a href="chatbot.html">Chatbot</a>
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+    <h1> AI Data Analyst</h1>
+
+    <!-- Chat -->
+    <div id="chatbox" style="background:white;padding:20px;border-radius:15px;height:300px;overflow:auto;"></div>
+
+    <!-- Input utilisateur -->
+    <div style="margin-top:20px;">
+        <input id="userInput" placeholder="Pose ta question..." style="width:80%;padding:10px;">
+        <button onclick="sendQuestion()">Envoyer</button>
+    </div>
+
+    <!-- Canvas pour Chart.js -->
+    <canvas id="chart" width="400" height="200" style="margin-top:20px;"></canvas>
+</div>
+
+<script>
+const API_URL = "http://127.0.0.1:5000/chatbot";
+let chart = null;
+
+// Ajouter un message dans le chat
+function addMessage(sender, text) {
+    const box = document.getElementById("chatbox");
+    const div = document.createElement("div");
+    div.className = sender === "user" ? "msg user" : "msg bot";
+    div.innerText = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+// Envoyer la question
+async function sendQuestion() {
+    const input = document.getElementById("userInput");
+    const question = input.value.trim();
+    if (!question) return;
+
+    addMessage("user", question);
+    input.value = "";
+
+    addMessage("bot", "⏳ Analyse en cours...");
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: question})
+        });
+
+        const data = await response.json();
+
+        // Supprimer "Analyse en cours"
+        const box = document.getElementById("chatbox");
+        if (box.lastChild) box.removeChild(box.lastChild);
+
+        handleResponse(data);
+
+    } catch (err) {
+        console.error(err);
+        addMessage("bot", "❌ Erreur lors de la connexion au serveur.");
+    }
+}
+
+// Traiter la réponse du backend
+function handleResponse(data) {
+    if (!data) return;
+
+    // 1️⃣ Si c'est un dashboard avec charts
+    if (data.type === "dashboard" && data.charts) {
+        addMessage("bot", data.message); // message texte du LLM
+
+        // 🔹 Sauvegarder les charts dans le localStorage
+        let dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+        dashboards.push(data.charts);
+        localStorage.setItem("dashboards", JSON.stringify(dashboards));
+    }
+
+    // 2️⃣ Message texte classique
+    if (data.message) addMessage("bot", data.message);
+}
+
+
+// Effacer ancien graphique
+function clearChart() {
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+}
+
+// Dessiner graphique
+function drawChart(type, title, data) {
+    clearChart();
+
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    chart = new Chart(ctx, {
+        type: type,
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: title,
+                data: Object.values(data),
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+}
+</script>
+
+</body>
+</html>

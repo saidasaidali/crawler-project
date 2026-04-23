@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Complet</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+</head>
+<body>
+
+<nav class="topbar">
+    <div class="logo">📶 Maroc Telecom AI</div>
+    <div class="menu">
+        <a href="home.html">Accueil</a>
+        <a href="sources.html">Sources</a>
+        <a href="search.html">Recherche</a>
+        <a href="chatbot.html">Chatbot</a>
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+</nav>
+
+<h1>Dashboard Complet</h1>
+<div id="dashboards"></div>
+
+<script>
+function createChart(container, type, title, data) {
+    const canvas = document.createElement("canvas");
+    container.appendChild(canvas);
+
+    new Chart(canvas.getContext("2d"), {
+        type: type === "trend" ? "line" : "bar",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: title,
+                data: Object.values(data),
+                backgroundColor: "rgba(54, 162, 235, 0.5)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                title: { display: true, text: title, font: { size: 16 } }
+            }
+        }
+    });
+}
+
+function loadDashboards() {
+    const container = document.getElementById("dashboards");
+    const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+
+    dashboards.forEach((dash, index) => {
+        const section = document.createElement("div");
+        section.className = "dashboard-section";
+
+        // Bouton supprimer
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Supprimer";
+        deleteBtn.className = "btn btn-secondary";
+        deleteBtn.style.float = "right";
+        deleteBtn.onclick = () => deleteDashboard(index);
+
+        const title = document.createElement("h2");
+        title.textContent = `Dashboard #${index+1}`;
+        section.appendChild(deleteBtn);
+        section.appendChild(title);
+
+        // Ajouter les graphiques
+        for (const [key, chartData] of Object.entries(dash)) {
+            const chartContainer = document.createElement("div");
+            chartContainer.className = "dashboard-chart";
+            section.appendChild(chartContainer);
+
+            createChart(chartContainer, key, key, chartData);
+        }
+
+        container.appendChild(section);
+    });
+}
+
+loadDashboards();
+function deleteDashboard(index) {
+    let dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+
+    // Supprimer du tableau
+    dashboards.splice(index, 1);
+
+    // Réenregistrer dans localStorage
+    localStorage.setItem("dashboards", JSON.stringify(dashboards));
+
+    // Recharger les dashboards
+    const container = document.getElementById("dashboards");
+    container.innerHTML = "";  // vider
+    loadDashboards();           // recharger
+}
+
+</script>
+
+</body>
+</html>

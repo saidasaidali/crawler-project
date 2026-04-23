@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Crawler - Gestion des Sources</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+</head>
+<body>
+    <nav class="topbar">
+      <div class="logo">📶 Maroc Telecom AI</div>
+      <div class="menu">
+        <a href="home.html">Accueil</a>
+        <a href="sources.html">Sources</a>
+        <a href="search.html">Recherche</a>
+        <a href="chatbot.html">Chatbot</a>
+        <a href="dashboard.html">Dashboard</a>
+      </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header avec statistiques -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-spider"></i> Web Crawler Manager</h1>
+                <div class="stats">
+                    <div class="stat-card">
+                        <i class="fas fa-list"></i>
+                        <div>
+                            <span class="stat-value" id="total-sources">0</span>
+                            <span class="stat-label">Sources</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <span class="stat-value" id="active-sources">0</span>
+                            <span class="stat-label">Actives</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-play"></i>
+                        <div>
+                            <span class="stat-value" id="running-sources">0</span>
+                            <span class="stat-label">En cours</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Formulaire d'ajout/modification -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fas fa-plus-circle"></i> <span id="form-title">Ajouter une source</span></h2>
+                    <button class="btn-icon" onclick="clearForm()" title="Réinitialiser">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+                
+                <form id="source-form" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label><i class="fas fa-link"></i> URL de la source</label>
+                            <input id="url" type="url" placeholder="https://example.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-tag"></i> Type</label>
+                            <select id="type" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="website">Website</option>
+                                <option value="rss">RSS Feed</option>
+                                <option value="blog">Blog</option>
+                                <option value="news">News</option>
+                                <option value="api">API</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Fréquence</label>
+                            <div class="input-group">
+                                <input id="frequency" type="number" min="1" placeholder="10" required>
+                                <select id="unit">
+                                    <option value="minutes">Minutes</option>
+                                    <option value="hours">Heures</option>
+                                    <option value="days">Jours</option>
+                                    <option value="weeks">Semaines</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-hashtag"></i> Max hits</label>
+                            <input id="max_hits" type="number" min="1" placeholder="100" required>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label><i class="fas fa-key"></i> Mots-clés (séparés par des virgules)</label>
+                            <div class="keywords-input">
+                                <input id="keywords" type="text" placeholder="web, scraping, data">
+                                <div id="keywords-tags"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button type="submit" id="submit" class="btn btn-primary" onclick="addSource()">
+                            <i class="fas fa-plus"></i> Ajouter la source
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Liste des sources -->
+            <div class="list-container">
+                <div class="list-header">
+                    <h2><i class="fas fa-database"></i> Sources configurées</h2>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search" placeholder="Rechercher..." onkeyup="filterSources()">
+                    </div>
+                </div>
+                
+                <div id="loading" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Chargement...
+                </div>
+                
+                <div id="empty-state" class="empty-state" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>Aucune source configurée</p>
+                    <small>Ajoutez votre première source ci-dessus</small>
+                </div>
+
+                <ul id="sources-list" class="sources-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
