@@ -28,7 +28,17 @@ This is a web crawler project with a backend API and a frontend dashboard.
    python backend/app.py
    ```
 
-4. Open the frontend in a browser (e.g., frontend/home.html)
+4. Start Ollama for the chatbot
+   ```
+   ollama serve --port 11434
+   ```
+
+5. If the model `phi3` is not installed:
+   ```
+   ollama pull phi3
+   ```
+
+6. Open the frontend in a browser (e.g., frontend/home.html)
 
 ## Usage
 

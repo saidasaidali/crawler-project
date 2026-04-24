@@ -295,7 +295,7 @@ def get_source_keyword_coverage():
                 {"$project": {"allKeywords": {"$setUnion": ["$keywords", "$keywords_found"]}}},
                 {"$unwind": "$allKeywords"},
                 {"$match": {"allKeywords": {"$in": defined_keywords}}},
-                {"$group": {"_id": null, "found": {"$addToSet": "$allKeywords"}}}
+                {"$group": {"_id": None, "found": {"$addToSet": "$allKeywords"}}}
             ]
             result = list(data_collection.aggregate(pipeline))
             if result:
@@ -329,7 +329,7 @@ def get_source_decisions():
             {"$project": {"allKeywords": {"$setUnion": ["$keywords", "$keywords_found"]}}},
             {"$unwind": "$allKeywords"},
             {"$match": {"allKeywords": {"$in": defined_keywords}}},
-            {"$group": {"_id": null, "found": {"$addToSet": "$allKeywords"}}}
+            {"$group": {"_id": None, "found": {"$addToSet": "$allKeywords"}}}
         ]))
         found_keywords = set(visualization[0].get("found", [])) if visualization else set()
         coverage_percent = round((len(found_keywords) / len(defined_keywords)) * 100, 1) if defined_keywords else 0.0

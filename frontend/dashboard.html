@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard de Décision - Analyse des Données</title>
+    <title>Dashboard Analytique - Maroc Telecom IA</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -20,63 +20,104 @@
 </nav>
 
 <header class="header dashboard-header">
-    <div class="header-content">
-        <h1>Dashboard d'Aide à la Décision</h1>
-        <p>Analyse opérationnelle des sources et mots-clés pour prioriser les prochains efforts de collecte.</p>
+    <div class="header-content dashboard-intro">
+        <h1>Dashboard Analytique</h1>
+        <p>Vue décisionnelle inspirée des rapports Power BI pour piloter la collecte et orienter l’investissement IA.</p>
     </div>
 </header>
 
-<section id="analytics-container">
-    <div class="metric-grid">
-        <div class="metric-card">
-            <h3>Sources actives</h3>
-            <p id="source-count">Chargement...</p>
-        </div>
-        <div class="metric-card">
-            <h3>Indice IA</h3>
-            <p id="ai-signal">Chargement...</p>
-        </div>
-        <div class="metric-card">
-            <h3>Sources à revoir</h3>
-            <p id="source-alerts">Chargement...</p>
-        </div>
-        <div class="metric-card">
-            <h3>Couverture IA</h3>
-            <p id="keyword-coverage">Chargement...</p>
-        </div>
+<section class="kpi-section">
+    <div class="kpi-card">
+        <span class="kpi-label">Sources actives</span>
+        <strong id="source-count">Chargement...</strong>
     </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Pages collectées</span>
+        <strong id="total-pages">Chargement...</strong>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Indice IA</span>
+        <strong id="ai-signal">Chargement...</strong>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Couverture mots-clés</span>
+        <strong id="keyword-coverage">Chargement...</strong>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Sources à revoir</span>
+        <strong id="source-alerts">Chargement...</strong>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Dernier crawl</span>
+        <strong id="last-crawl">Chargement...</strong>
+    </div>
+</section>
 
-    <div class="chart-grid">
-        <div class="chart-panel">
-            <h3>Relevance IA par source</h3>
+<section class="analytics-container">
+    <div class="panel-row">
+        <div class="panel card-panel">
+            <div class="panel-header">
+                <h2>Analyse IA</h2>
+                <p>Répartition des pages IA par source et tendance d’usage.</p>
+            </div>
             <canvas id="ai-source-chart"></canvas>
         </div>
-        <div class="chart-panel">
-            <h3>Couverture mots-clés par source</h3>
+        <div class="panel card-panel">
+            <div class="panel-header">
+                <h2>Couverture mots-clés</h2>
+                <p>Performance des sources sur les mots-clés définis.</p>
+            </div>
             <canvas id="coverage-chart"></canvas>
-        </div>
-        <div class="chart-panel full-width">
-            <h3>Tendance IA</h3>
-            <canvas id="ai-trend-chart"></canvas>
         </div>
     </div>
 
-    <div class="decision-panel">
-        <div class="decision-header">
-            <h3>Recommandations</h3>
-            <p>Sources à prioriser ou à vérifier pour améliorer la qualité des données.</p>
+    <div class="panel-row">
+        <div class="panel card-panel">
+            <div class="panel-header">
+                <h2>Tendance IA</h2>
+                <p>Évolution du volume de contenu IA dans le temps.</p>
+            </div>
+            <canvas id="ai-trend-chart"></canvas>
         </div>
-        <table class="decision-table">
-            <thead>
-                <tr>
-                    <th>Source</th>
-                    <th>Couverture</th>
-                    <th>Pages 7j</th>
-                    <th>Recommandation</th>
-                </tr>
-            </thead>
-            <tbody id="decision-body"></tbody>
-        </table>
+        <div class="panel card-panel">
+            <div class="panel-header">
+                <h2>Volume de crawl</h2>
+                <p>Activité de collecte globale par jour.</p>
+            </div>
+            <canvas id="crawl-trend-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="panel-row">
+        <div class="panel card-panel full-width">
+            <div class="panel-header">
+                <h2>Top mots-clés détectés</h2>
+                <p>Les mots-clés les plus fréquents présents dans les contenus collectés.</p>
+            </div>
+            <canvas id="keyword-frequency-chart"></canvas>
+        </div>
+    </div>
+</section>
+
+<section class="decision-section">
+    <div class="decision-card">
+        <div class="decision-header">
+            <h3>Recommandations stratégiques</h3>
+            <p>Les sources à prioriser, ajuster ou vérifier pour améliorer le ROI IA.</p>
+        </div>
+        <div class="decision-table-wrap">
+            <table class="decision-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Couverture</th>
+                        <th>Pages 7j</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody id="decision-body"></tbody>
+            </table>
+        </div>
     </div>
 </section>
 
@@ -92,50 +133,58 @@ async function fetchData(url) {
 }
 
 async function loadDashboard() {
-    const [perfData, coverageData, keywordData, decisionsData, aiData] = await Promise.all([
+    const [totalData, perfData, coverageData, keywordData, decisionsData, aiData, crawlTrendsData] = await Promise.all([
+        fetchData('http://localhost:5000/analytics/total_pages'),
         fetchData('http://localhost:5000/analytics/source_performance'),
         fetchData('http://localhost:5000/analytics/source_keyword_coverage'),
         fetchData('http://localhost:5000/analytics/keyword_frequency'),
         fetchData('http://localhost:5000/analytics/source_decisions'),
-        fetchData('http://localhost:5000/analytics/ai_investment')
+        fetchData('http://localhost:5000/analytics/ai_investment'),
+        fetchData('http://localhost:5000/analytics/crawl_trends')
     ]);
 
     const sourceCount = perfData ? perfData.length : 0;
-    document.getElementById('source-count').textContent = sourceCount;
-
-    const avgCoverage = coverageData && coverageData.length > 0
+    const totalPages = totalData ? totalData.total_pages : 0;
+    const aiSignal = aiData ? `${aiData.ai_ratio}%` : 'N/A';
+    const avgCoverage = coverageData ; coverageData.length > 0
         ? `${(coverageData.reduce((sum, item) => sum + item.coverage_percent, 0) / coverageData.length).toFixed(1)}%`
         : 'N/A';
-    document.getElementById('keyword-coverage').textContent = avgCoverage;
-
     const alerts = decisionsData
-        ? decisionsData.filter(item => !item.recommendations.includes('Source performante')).length
+        ? decisionsData.filter(item => item.recommendations.some(r => r !== 'Source performante')).length
         : 0;
-    document.getElementById('source-alerts').textContent = alerts;
+    const lastCrawl = perfData ; perfData.length > 0 ; perfData[0].last_crawl
+        ? new Date(perfData[0].last_crawl).toLocaleDateString('fr-FR')
+        : 'N/A';
 
-    const aiSignal = aiData ? `${aiData.ai_ratio}% (IA pages: ${aiData.ai_pages})` : 'N/A';
+    document.getElementById('source-count').textContent = sourceCount;
+    document.getElementById('total-pages').textContent = totalPages.toLocaleString('fr-FR');
     document.getElementById('ai-signal').textContent = aiSignal;
+    document.getElementById('keyword-coverage').textContent = avgCoverage;
+    document.getElementById('source-alerts').textContent = alerts;
+    document.getElementById('last-crawl').textContent = lastCrawl;
 
-    if (aiData && aiData.recommendation) {
+    if (aiData) {
         const recPanel = document.createElement('div');
         recPanel.className = 'ai-recommendation';
         recPanel.innerHTML = `<strong>Recommandation IA:</strong> ${aiData.recommendation}`;
-        document.querySelector('.decision-panel').insertAdjacentElement('afterbegin', recPanel);
-    }
+        document.querySelector('.dashboard-intro').appendChild(recPanel);
 
-    if (aiData) {
-        const data = {};
-        aiData.source_relevance.forEach(item => data[item.source] = item.ai_pages);
-        createVerticalChart('ai-source-chart', 'Nombre de pages IA par source', data, 'rgba(153, 102, 255, 0.6)');
-        if (aiData.ai_trend && Object.keys(aiData.ai_trend).length > 0) {
-            createVerticalChart('ai-trend-chart', 'Tendance IA par jour', aiData.ai_trend, 'rgba(255, 99, 132, 0.6)');
-        }
+        const aiSourceData = {};
+        aiData.source_relevance.forEach(item => aiSourceData[item.source] = item.ai_pages);
+        createVerticalChart('ai-source-chart', 'Pages IA par source', aiSourceData, 'rgba(153, 102, 255, 0.85)');
+
+        const aiTrendData = aiData.ai_trend ; {};
+        createLineChart('ai-trend-chart', 'Tendance IA', aiTrendData, 'rgba(255, 99, 132, 0.85)');
     }
 
     if (coverageData) {
-        const data = {};
-        coverageData.forEach(item => data[item.source] = item.coverage_percent);
-        createVerticalChart('coverage-chart', 'Couverture mots-clés %', data, 'rgba(75, 192, 192, 0.6)');
+        const coverageValues = {};
+        coverageData.forEach(item => coverageValues[item.source] = item.coverage_percent);
+        createDoughnutChart('coverage-chart', 'Couverture mots-clés', coverageValues);
+    }
+
+    if (crawlTrendsData) {
+        createLineChart('crawl-trend-chart', 'Volume de crawl par jour', crawlTrendsData, 'rgba(54, 162, 235, 0.85)');
     }
 
     if (keywordData) {
@@ -143,58 +192,109 @@ async function loadDashboard() {
     }
 
     if (decisionsData) {
-        const body = document.getElementById('decision-body');
-        body.innerHTML = '';
-        decisionsData.sort((a, b) => b.pages - a.pages).slice(0, 8).forEach(item => {
-            const tr = document.createElement('tr');
-            const recommendation = item.recommendations.filter(r => r !== 'Source performante').join(' • ') || 'OK';
-            tr.innerHTML = `
-                <td>${item.source}</td>
-                <td>${item.coverage_percent}%</td>
-                <td>${item.recent_pages}</td>
-                <td>${recommendation}</td>
-            `;
-            body.appendChild(tr);
-        });
+        renderDecisionTable(decisionsData);
     }
 }
 
-function createVerticalChart(canvasId, title, data, color = 'rgba(54, 162, 235, 0.6)') {
+function renderDecisionTable(decisionsData) {
+    const body = document.getElementById('decision-body');
+    body.innerHTML = '';
+    const sorted = [...decisionsData].sort((a, b) => b.pages - a.pages).slice(0, 10);
+    sorted.forEach(item => {
+        const tr = document.createElement('tr');
+        const recommendation = item.recommendations.filter(r => r !== 'Source performante').join(' • ') ; 'Source performante';
+        tr.innerHTML = `
+            <td>${item.source}</td>
+            <td>${item.coverage_percent}%</td>
+            <td>${item.recent_pages}</td>
+            <td>${recommendation}</td>
+        `;
+        body.appendChild(tr);
+    });
+}
+
+function createVerticalChart(canvasId, label, data, color) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'bar',
         data: {
             labels: Object.keys(data),
             datasets: [{
-                label: title,
+                label,
                 data: Object.values(data),
                 backgroundColor: color,
-                borderColor: color.replace('0.6', '1'),
+                borderColor: color.replace('0.85', '1'),
                 borderWidth: 1
             }]
         },
         options: {
-            indexAxis: 'x',
             responsive: true,
-            plugins: {
-                title: { display: true, text: title, font: { size: 16 } },
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: { y: { beginAtZero: true } }
         }
     });
 }
 
-function createHorizontalChart(canvasId, title, data) {
+function createLineChart(canvasId, label, data, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label,
+                data: Object.values(data),
+                backgroundColor: color,
+                borderColor: color.replace('0.85', '1'),
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function createDoughnutChart(canvasId, label, data) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label,
+                data: Object.values(data),
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.85)',
+                    'rgba(255, 99, 132, 0.85)',
+                    'rgba(255, 206, 86, 0.85)',
+                    'rgba(75, 192, 192, 0.85)',
+                    'rgba(153, 102, 255, 0.85)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+}
+
+function createHorizontalChart(canvasId, label, data) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'bar',
         data: {
             labels: Object.keys(data),
             datasets: [{
-                label: title,
+                label,
                 data: Object.values(data),
-                backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                backgroundColor: 'rgba(255, 159, 64, 0.85)',
                 borderColor: 'rgba(255, 159, 64, 1)',
                 borderWidth: 1
             }]
@@ -202,10 +302,8 @@ function createHorizontalChart(canvasId, title, data) {
         options: {
             indexAxis: 'y',
             responsive: true,
-            plugins: {
-                title: { display: true, text: title, font: { size: 16 } },
-                legend: { display: false }
-            }
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
         }
     });
 }
