@@ -7,7 +7,7 @@ from scheduler import start_scheduler, schedule_all_sources
 from scheduler import schedule_source, remove_source_job
 from database import data_collection
 import pandas as pd
-from datetime import datetime
+import re
 from chatbot_llm import process_question
 
 
@@ -112,33 +112,40 @@ def search():
     if not keyword or keyword.strip() == "":
         return jsonify([])
 
+    keyword = keyword.strip()
+
     # Vérifier si le mot-clé recherché est défini dans les sources
     sources_with_keyword = list(sources_collection.find(
-        {"keywords": {"$in": [keyword.strip()]}},
+        {"keywords": {"$in": [keyword]}},
         {"url": 1, "_id": 0}
     ))
     
     source_urls = [s["url"] for s in sources_with_keyword]
     is_source_keyword = len(source_urls) > 0
 
-    # Base query
-    query = {
-        "$or": [
-            {"keywords": {"$regex": keyword, "$options": "i"}},
-            {"content": {"$regex": keyword, "$options": "i"}},
-            {"url": {"$regex": keyword, "$options": "i"}}
-        ]
-    }
-
-    # Si le mot-clé est défini dans des sources, filtrer par ces sources uniquement
+    # Si le mot-clé est défini dans les sources, ne renvoyer que les pages qui contiennent ce mot-clé
     if is_source_keyword:
-        query["source"] = {"$in": source_urls}
+        query = {
+            "source": {"$in": source_urls},
+            "$or": [
+                {"keywords": {"$in": [keyword]}},
+                {"keywords_found": {"$in": [keyword]}}
+            ]
+        }
+    else:
+        query = {
+            "$or": [
+                {"keywords": {"$regex": keyword, "$options": "i"}},
+                {"keywords_found": {"$regex": keyword, "$options": "i"}},
+                {"content": {"$regex": keyword, "$options": "i"}},
+                {"url": {"$regex": keyword, "$options": "i"}}
+            ]
+        }
 
-    # Cherche le mot exact dans la liste 'keywords'
     results = list(
         data_collection.find(
             query,
-            {"content": 1, "url": 1, "keywords": 1, "crawled_at": 1, "source": 1}
+            {"content": 1, "url": 1, "keywords": 1, "keywords_found": 1, "crawled_at": 1, "source": 1}
         )
     )
 

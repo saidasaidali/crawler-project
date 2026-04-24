@@ -87,7 +87,7 @@ function search() {
                     <h3>🌐 ${item.url}</h3>
                     <p><b>Source:</b> ${item.source || "N/A"}</p>
                     <p><b>Date:</b> ${item.crawled_at ? new Date(item.crawled_at).toLocaleString() : "?"}</p>
-                    <p><b>Mots-clés:</b> ${(item.keywords && item.keywords.length > 0) ? item.keywords.join(", ") : "Aucun"}</p>
+                    <p><b>Mots-clés:</b> ${((item.keywords && item.keywords.length > 0) ? item.keywords : (item.keywords_found && item.keywords_found.length > 0) ? item.keywords_found : []).join(", ") || "Aucun"}</p>
                     <p id="snippet-${idx}">${snippet}${fullContent.length > 300 ? "..." : ""}</p>
                     ${fullContent.length > 300 ? `<button class="show-more-btn" onclick="toggleContent(${idx}, \`${fullContent.replace(/`/g, '\\`')}\`)">Voir plus</button>` : ""}
                 `;
