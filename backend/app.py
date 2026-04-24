@@ -108,10 +108,18 @@ def delete_source(source_id):
 @app.route("/search", methods=["GET"])
 def search():
     keyword = request.args.get("q")
-    source_keywords = request.args.getlist("source_keywords")  # Liste de mots-clés de sources
 
     if not keyword or keyword.strip() == "":
         return jsonify([])
+
+    # Vérifier si le mot-clé recherché est défini dans les sources
+    sources_with_keyword = list(sources_collection.find(
+        {"keywords": {"$in": [keyword.strip()]}},
+        {"url": 1, "_id": 0}
+    ))
+    
+    source_urls = [s["url"] for s in sources_with_keyword]
+    is_source_keyword = len(source_urls) > 0
 
     # Base query
     query = {
@@ -122,20 +130,9 @@ def search():
         ]
     }
 
-    # Si des mots-clés de sources sont spécifiés, filtrer par sources qui contiennent ces mots-clés
-    if source_keywords:
-        # Récupérer les URLs des sources qui contiennent les mots-clés spécifiés
-        sources_with_keywords = list(sources_collection.find(
-            {"keywords": {"$in": source_keywords}},
-            {"url": 1, "_id": 0}
-        ))
-        source_urls = [s["url"] for s in sources_with_keywords]
-        
-        if source_urls:
-            query["source"] = {"$in": source_urls}
-        else:
-            # Si aucune source ne correspond, retourner un résultat vide
-            return jsonify([])
+    # Si le mot-clé est défini dans des sources, filtrer par ces sources uniquement
+    if is_source_keyword:
+        query["source"] = {"$in": source_urls}
 
     # Cherche le mot exact dans la liste 'keywords'
     results = list(
@@ -148,7 +145,11 @@ def search():
     for r in results:
         r["_id"] = str(r["_id"])
 
-    return jsonify(results)
+    return jsonify({
+        "results": results,
+        "is_source_keyword": is_source_keyword,
+        "matching_sources": source_urls if is_source_keyword else []
+    })
 
 
 @app.route("/chatbot", methods=["POST"])
