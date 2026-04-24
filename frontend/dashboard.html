@@ -2,10 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard d'Analyse des Données</title>
+    <title>Dashboard de Décision - Analyse des Données</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
 </head>
 <body>
 
@@ -16,37 +15,70 @@
         <a href="sources.html">Sources</a>
         <a href="search.html">Recherche</a>
         <a href="chatbot.html">Chatbot</a>
-        <a href="dashboard.html">Dashboard</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
     </div>
 </nav>
 
-<h1>Dashboard d'Analyse des Données Collectées</h1>
-<div id="analytics-container">
-    <div class="metric-card">
-        <h3>Total Pages Crawlées</h3>
-        <p id="total-pages">Chargement...</p>
+<header class="header dashboard-header">
+    <div class="header-content">
+        <h1>Dashboard d'Aide à la Décision</h1>
+        <p>Analyse opérationnelle des sources et mots-clés pour prioriser les prochains efforts de collecte.</p>
     </div>
-    
-    <div class="chart-container">
-        <h3>Pages par Source</h3>
-        <canvas id="pages-per-source-chart"></canvas>
+</header>
+
+<section id="analytics-container">
+    <div class="metric-grid">
+        <div class="metric-card">
+            <h3>Sources actives</h3>
+            <p id="source-count">Chargement...</p>
+        </div>
+        <div class="metric-card">
+            <h3>Mots-clés couverts</h3>
+            <p id="keyword-coverage">Chargement...</p>
+        </div>
+        <div class="metric-card">
+            <h3>Sources à revoir</h3>
+            <p id="source-alerts">Chargement...</p>
+        </div>
+        <div class="metric-card">
+            <h3>Pages pertinentes</h3>
+            <p id="relevant-pages">Chargement...</p>
+        </div>
     </div>
-    
-    <div class="chart-container">
-        <h3>Fréquence des Mots-Clés</h3>
-        <canvas id="keyword-frequency-chart"></canvas>
+
+    <div class="chart-grid">
+        <div class="chart-panel">
+            <h3>Performance des sources</h3>
+            <canvas id="source-performance-chart"></canvas>
+        </div>
+        <div class="chart-panel">
+            <h3>Couverture mots-clés par source</h3>
+            <canvas id="coverage-chart"></canvas>
+        </div>
+        <div class="chart-panel full-width">
+            <h3>Top mots-clés détectés</h3>
+            <canvas id="keyword-frequency-chart"></canvas>
+        </div>
     </div>
-    
-    <div class="chart-container">
-        <h3>Tendances de Crawling</h3>
-        <canvas id="crawl-trends-chart"></canvas>
+
+    <div class="decision-panel">
+        <div class="decision-header">
+            <h3>Recommandations</h3>
+            <p>Sources à prioriser ou à vérifier pour améliorer la qualité des données.</p>
+        </div>
+        <table class="decision-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Couverture</th>
+                    <th>Pages 7j</th>
+                    <th>Recommandation</th>
+                </tr>
+            </thead>
+            <tbody id="decision-body"></tbody>
+        </table>
     </div>
-    
-    <div class="recent-crawls">
-        <h3>Crawls Récentes</h3>
-        <ul id="recent-list"></ul>
-    </div>
-</div>
+</section>
 
 <script>
 async function fetchData(url) {
@@ -59,69 +91,115 @@ async function fetchData(url) {
     }
 }
 
-async function loadAnalytics() {
-    // Total pages
-    const totalData = await fetchData('http://localhost:5000/analytics/total_pages');
-    if (totalData) {
-        document.getElementById('total-pages').textContent = totalData.total_pages;
+async function loadDashboard() {
+    const [perfData, coverageData, keywordData, decisionsData] = await Promise.all([
+        fetchData('http://localhost:5000/analytics/source_performance'),
+        fetchData('http://localhost:5000/analytics/source_keyword_coverage'),
+        fetchData('http://localhost:5000/analytics/keyword_frequency'),
+        fetchData('http://localhost:5000/analytics/source_decisions')
+    ]);
+
+    const sourceCount = perfData ? perfData.length : 0;
+    document.getElementById('source-count').textContent = sourceCount;
+
+    const relevantPages = perfData ? perfData.reduce((sum, item) => sum + item.pages, 0) : 0;
+    document.getElementById('relevant-pages').textContent = relevantPages;
+
+    const avgCoverage = coverageData && coverageData.length > 0
+        ? `${(coverageData.reduce((sum, item) => sum + item.coverage_percent, 0) / coverageData.length).toFixed(1)}%`
+        : 'N/A';
+    document.getElementById('keyword-coverage').textContent = avgCoverage;
+
+    const alerts = decisionsData
+        ? decisionsData.filter(item => !item.recommendations.includes('Source performante')).length
+        : 0;
+    document.getElementById('source-alerts').textContent = alerts;
+
+    if (perfData) {
+        const data = {};
+        perfData.forEach(item => data[item.source] = item.pages);
+        createVerticalChart('source-performance-chart', 'Performance des sources', data);
     }
-    
-    // Pages per source
-    const pagesData = await fetchData('http://localhost:5000/analytics/pages_per_source');
-    if (pagesData) {
-        createChart('pages-per-source-chart', 'bar', 'Pages par Source', pagesData);
+
+    if (coverageData) {
+        const data = {};
+        coverageData.forEach(item => data[item.source] = item.coverage_percent);
+        createVerticalChart('coverage-chart', 'Couverture mots-clés %', data, 'rgba(75, 192, 192, 0.6)');
     }
-    
-    // Keyword frequency
-    const keywordData = await fetchData('http://localhost:5000/analytics/keyword_frequency');
+
     if (keywordData) {
-        createChart('keyword-frequency-chart', 'bar', 'Fréquence des Mots-Clés', keywordData);
+        createHorizontalChart('keyword-frequency-chart', 'Top mots-clés', keywordData);
     }
-    
-    // Crawl trends
-    const trendsData = await fetchData('http://localhost:5000/analytics/crawl_trends');
-    if (trendsData) {
-        createChart('crawl-trends-chart', 'line', 'Tendances de Crawling', trendsData);
-    }
-    
-    // Recent crawls
-    const recentData = await fetchData('http://localhost:5000/analytics/recent_crawls');
-    if (recentData) {
-        const list = document.getElementById('recent-list');
-        list.innerHTML = '';
-        recentData.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.url} - ${new Date(item.crawled_at).toLocaleString()}`;
-            list.appendChild(li);
+
+    if (decisionsData) {
+        const body = document.getElementById('decision-body');
+        body.innerHTML = '';
+        decisionsData.sort((a, b) => b.pages - a.pages).slice(0, 8).forEach(item => {
+            const tr = document.createElement('tr');
+            const recommendation = item.recommendations.filter(r => r !== 'Source performante').join(' • ') || 'OK';
+            tr.innerHTML = `
+                <td>${item.source}</td>
+                <td>${item.coverage_percent}%</td>
+                <td>${item.recent_pages}</td>
+                <td>${recommendation}</td>
+            `;
+            body.appendChild(tr);
         });
     }
 }
 
-function createChart(canvasId, type, title, data) {
+function createVerticalChart(canvasId, title, data, color = 'rgba(54, 162, 235, 0.6)') {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
-        type: type,
+        type: 'bar',
         data: {
             labels: Object.keys(data),
             datasets: [{
                 label: title,
                 data: Object.values(data),
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: color,
+                borderColor: color.replace('0.6', '1'),
                 borderWidth: 1
             }]
         },
         options: {
+            indexAxis: 'x',
             responsive: true,
             plugins: {
-                legend: { display: true },
-                title: { display: true, text: title, font: { size: 16 } }
+                title: { display: true, text: title, font: { size: 16 } },
+                legend: { display: false }
+            },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function createHorizontalChart(canvasId, title, data) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: title,
+                data: Object.values(data),
+                backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                title: { display: true, text: title, font: { size: 16 } },
+                legend: { display: false }
             }
         }
     });
 }
 
-loadAnalytics();
+loadDashboard();
 </script>
 
 </body>
