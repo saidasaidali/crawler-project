@@ -198,6 +198,64 @@ def get_keyword_frequency():
     data = {item["_id"]: item["count"] for item in result}
     return jsonify(data)
 
+@app.route("/analytics/ai_investment", methods=["GET"])
+def get_ai_investment():
+    ai_terms = [
+        "ia", "ai", "intelligence artificielle", "machine learning",
+        "deep learning", "apprentissage automatique", "data science",
+        "automatisation", "robotique", "analyse prédictive"
+    ]
+    ai_pattern = re.compile(r"\b(?:" + "|".join([re.escape(term) for term in ai_terms]) + r")\b", re.IGNORECASE)
+
+    total_pages = data_collection.count_documents({})
+    ai_query = {
+        "$or": [
+            {"keywords": {"$in": ai_terms}},
+            {"keywords_found": {"$in": ai_terms}},
+            {"content": {"$regex": r"\b(?:" + "|".join([re.escape(term) for term in ai_terms]) + r")\b", "$options": "i"}}
+        ]
+    }
+    ai_pages = data_collection.count_documents(ai_query)
+    ai_ratio = round((ai_pages / total_pages) * 100, 1) if total_pages else 0.0
+
+    source_pipeline = [
+        {"$match": ai_query},
+        {"$group": {"_id": "$source", "ai_pages": {"$sum": 1}}},
+        {"$sort": {"ai_pages": -1}}
+    ]
+    source_data = list(data_collection.aggregate(source_pipeline))
+    source_relevance = [{"source": item["_id"], "ai_pages": item["ai_pages"]} for item in source_data]
+
+    trend_pipeline = [
+        {"$match": ai_query},
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$crawled_at"}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    trend_data = list(data_collection.aggregate(trend_pipeline))
+    ai_trend = {item["_id"]: item["count"] for item in trend_data}
+
+    recommendation = "Collecte supplémentaire recommandée avant décision IA."
+    if ai_ratio >= 20:
+        recommendation = "Forte présence IA détectée : explorer un investissement IA prioritaire."
+    elif ai_ratio >= 10:
+        recommendation = "Intérêt IA modéré : renforcer la collecte et piloter des cas d’usage IA."
+    elif ai_ratio > 0:
+        recommendation = "Faible présence IA : collecter plus de données IA avant décision."
+    else:
+        recommendation = "Aucune présence IA détectée actuellement dans les données collectées."
+
+    return jsonify({
+        "total_pages": total_pages,
+        "ai_pages": ai_pages,
+        "ai_ratio": ai_ratio,
+        "source_relevance": source_relevance,
+        "ai_trend": ai_trend,
+        "recommendation": recommendation
+    })
+
 @app.route("/analytics/recent_crawls", methods=["GET"])
 def get_recent_crawls():
     limit = int(request.args.get("limit", 10))

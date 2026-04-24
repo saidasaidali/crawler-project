@@ -33,31 +33,31 @@
             <p id="source-count">Chargement...</p>
         </div>
         <div class="metric-card">
-            <h3>Mots-clés couverts</h3>
-            <p id="keyword-coverage">Chargement...</p>
+            <h3>Indice IA</h3>
+            <p id="ai-signal">Chargement...</p>
         </div>
         <div class="metric-card">
             <h3>Sources à revoir</h3>
             <p id="source-alerts">Chargement...</p>
         </div>
         <div class="metric-card">
-            <h3>Pages pertinentes</h3>
-            <p id="relevant-pages">Chargement...</p>
+            <h3>Couverture IA</h3>
+            <p id="keyword-coverage">Chargement...</p>
         </div>
     </div>
 
     <div class="chart-grid">
         <div class="chart-panel">
-            <h3>Performance des sources</h3>
-            <canvas id="source-performance-chart"></canvas>
+            <h3>Relevance IA par source</h3>
+            <canvas id="ai-source-chart"></canvas>
         </div>
         <div class="chart-panel">
             <h3>Couverture mots-clés par source</h3>
             <canvas id="coverage-chart"></canvas>
         </div>
         <div class="chart-panel full-width">
-            <h3>Top mots-clés détectés</h3>
-            <canvas id="keyword-frequency-chart"></canvas>
+            <h3>Tendance IA</h3>
+            <canvas id="ai-trend-chart"></canvas>
         </div>
     </div>
 
@@ -92,18 +92,16 @@ async function fetchData(url) {
 }
 
 async function loadDashboard() {
-    const [perfData, coverageData, keywordData, decisionsData] = await Promise.all([
+    const [perfData, coverageData, keywordData, decisionsData, aiData] = await Promise.all([
         fetchData('http://localhost:5000/analytics/source_performance'),
         fetchData('http://localhost:5000/analytics/source_keyword_coverage'),
         fetchData('http://localhost:5000/analytics/keyword_frequency'),
-        fetchData('http://localhost:5000/analytics/source_decisions')
+        fetchData('http://localhost:5000/analytics/source_decisions'),
+        fetchData('http://localhost:5000/analytics/ai_investment')
     ]);
 
     const sourceCount = perfData ? perfData.length : 0;
     document.getElementById('source-count').textContent = sourceCount;
-
-    const relevantPages = perfData ? perfData.reduce((sum, item) => sum + item.pages, 0) : 0;
-    document.getElementById('relevant-pages').textContent = relevantPages;
 
     const avgCoverage = coverageData && coverageData.length > 0
         ? `${(coverageData.reduce((sum, item) => sum + item.coverage_percent, 0) / coverageData.length).toFixed(1)}%`
@@ -115,10 +113,23 @@ async function loadDashboard() {
         : 0;
     document.getElementById('source-alerts').textContent = alerts;
 
-    if (perfData) {
+    const aiSignal = aiData ? `${aiData.ai_ratio}% (IA pages: ${aiData.ai_pages})` : 'N/A';
+    document.getElementById('ai-signal').textContent = aiSignal;
+
+    if (aiData && aiData.recommendation) {
+        const recPanel = document.createElement('div');
+        recPanel.className = 'ai-recommendation';
+        recPanel.innerHTML = `<strong>Recommandation IA:</strong> ${aiData.recommendation}`;
+        document.querySelector('.decision-panel').insertAdjacentElement('afterbegin', recPanel);
+    }
+
+    if (aiData) {
         const data = {};
-        perfData.forEach(item => data[item.source] = item.pages);
-        createVerticalChart('source-performance-chart', 'Performance des sources', data);
+        aiData.source_relevance.forEach(item => data[item.source] = item.ai_pages);
+        createVerticalChart('ai-source-chart', 'Nombre de pages IA par source', data, 'rgba(153, 102, 255, 0.6)');
+        if (aiData.ai_trend && Object.keys(aiData.ai_trend).length > 0) {
+            createVerticalChart('ai-trend-chart', 'Tendance IA par jour', aiData.ai_trend, 'rgba(255, 99, 132, 0.6)');
+        }
     }
 
     if (coverageData) {
@@ -128,7 +139,7 @@ async function loadDashboard() {
     }
 
     if (keywordData) {
-        createHorizontalChart('keyword-frequency-chart', 'Top mots-clés', keywordData);
+        createHorizontalChart('keyword-frequency-chart', 'Top mots-clés détectés', keywordData);
     }
 
     if (decisionsData) {
