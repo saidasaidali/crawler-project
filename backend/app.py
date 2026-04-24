@@ -108,21 +108,40 @@ def delete_source(source_id):
 @app.route("/search", methods=["GET"])
 def search():
     keyword = request.args.get("q")
+    source_keywords = request.args.getlist("source_keywords")  # Liste de mots-clés de sources
 
     if not keyword or keyword.strip() == "":
         return jsonify([])
 
+    # Base query
+    query = {
+        "$or": [
+            {"keywords": {"$regex": keyword, "$options": "i"}},
+            {"content": {"$regex": keyword, "$options": "i"}},
+            {"url": {"$regex": keyword, "$options": "i"}}
+        ]
+    }
+
+    # Si des mots-clés de sources sont spécifiés, filtrer par sources qui contiennent ces mots-clés
+    if source_keywords:
+        # Récupérer les URLs des sources qui contiennent les mots-clés spécifiés
+        sources_with_keywords = list(sources_collection.find(
+            {"keywords": {"$in": source_keywords}},
+            {"url": 1, "_id": 0}
+        ))
+        source_urls = [s["url"] for s in sources_with_keywords]
+        
+        if source_urls:
+            query["source"] = {"$in": source_urls}
+        else:
+            # Si aucune source ne correspond, retourner un résultat vide
+            return jsonify([])
+
     # Cherche le mot exact dans la liste 'keywords'
     results = list(
         data_collection.find(
-            {
-                    "$or": [
-                       {"keywords": {"$regex": keyword, "$options": "i"}},
-                       {"content": {"$regex": keyword, "$options": "i"}},
-                       {"url": {"$regex": keyword, "$options": "i"}}
-                    ]
-            },
-            {"content": 1, "url": 1, "keywords": 1, "crawled_at": 1}
+            query,
+            {"content": 1, "url": 1, "keywords": 1, "crawled_at": 1, "source": 1}
         )
     )
 
@@ -190,6 +209,21 @@ def get_crawl_trends():
     result = list(data_collection.aggregate(pipeline))
     data = {item["_id"]: item["count"] for item in result}
     return jsonify(data)
+
+# Get available keywords from sources
+@app.route("/keywords", methods=["GET"])
+def get_keywords():
+    sources = list(sources_collection.find({}, {"keywords": 1, "url": 1, "_id": 0}))
+    keywords_map = {}
+    
+    for source in sources:
+        if "keywords" in source and source["keywords"]:
+            for keyword in source["keywords"]:
+                if keyword not in keywords_map:
+                    keywords_map[keyword] = []
+                keywords_map[keyword].append(source["url"])
+    
+    return jsonify(keywords_map)
 
 
 

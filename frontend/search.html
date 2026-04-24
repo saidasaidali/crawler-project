@@ -22,15 +22,98 @@
 
 <!-- Contenu -->
 <div class="container">
-    <div class="search-box">
-        <input id="keyword" type="text" placeholder="Ex: AI, cybersecurity, cloud..." />
-        <button onclick="search()"><i class="fas fa-search"></i> Rechercher</button>
+    <div class="search-section">
+        <div class="search-box">
+            <input id="keyword" type="text" placeholder="Ex: AI, cybersecurity, cloud..." />
+            <button onclick="search()"><i class="fas fa-search"></i> Rechercher</button>
+        </div>
+        
+        <div class="filter-section">
+            <h3><i class="fas fa-filter"></i> Filtrer par mots-clés de sources</h3>
+            <div id="keywords-filter" class="keywords-filter">
+                <p class="loading">Chargement des mots-clés...</p>
+            </div>
+            <div class="selected-keywords" id="selected-keywords"></div>
+        </div>
     </div>
 
     <div id="results" class="results"></div>
 </div>
 
 <script>
+let selectedKeywords = [];
+
+async function loadKeywords() {
+    try {
+        const response = await fetch('http://localhost:5000/keywords');
+        const keywordsMap = await response.json();
+        
+        const filterDiv = document.getElementById('keywords-filter');
+        filterDiv.innerHTML = '';
+        
+        if (Object.keys(keywordsMap).length === 0) {
+            filterDiv.innerHTML = '<p class="empty-state">Aucun mot-clé défini dans les sources.</p>';
+            return;
+        }
+        
+        const keywordsList = Object.keys(keywordsMap).sort();
+        
+        keywordsList.forEach(keyword => {
+            const sources = keywordsMap[keyword];
+            const keywordBtn = document.createElement('button');
+            keywordBtn.className = 'keyword-btn';
+            keywordBtn.textContent = `${keyword} (${sources.length})`;
+            keywordBtn.title = `Sources: ${sources.join(', ')}`;
+            keywordBtn.onclick = () => toggleKeyword(keyword);
+            filterDiv.appendChild(keywordBtn);
+        });
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des mots-clés:', error);
+        document.getElementById('keywords-filter').innerHTML = '<p class="error">Erreur de chargement des mots-clés.</p>';
+    }
+}
+
+function toggleKeyword(keyword) {
+    const index = selectedKeywords.indexOf(keyword);
+    if (index > -1) {
+        selectedKeywords.splice(index, 1);
+    } else {
+        selectedKeywords.push(keyword);
+    }
+    updateSelectedKeywordsDisplay();
+    updateKeywordButtons();
+}
+
+function updateSelectedKeywordsDisplay() {
+    const selectedDiv = document.getElementById('selected-keywords');
+    selectedDiv.innerHTML = '';
+    
+    if (selectedKeywords.length === 0) {
+        selectedDiv.innerHTML = '<p class="no-selection">Aucun mot-clé sélectionné (recherche dans toutes les sources)</p>';
+        return;
+    }
+    
+    selectedKeywords.forEach(keyword => {
+        const tag = document.createElement('span');
+        tag.className = 'keyword-tag';
+        tag.innerHTML = `${keyword} <i class="fas fa-times" onclick="toggleKeyword('${keyword}')"></i>`;
+        selectedDiv.appendChild(tag);
+    });
+}
+
+function updateKeywordButtons() {
+    const buttons = document.querySelectorAll('.keyword-btn');
+    buttons.forEach(btn => {
+        const keyword = btn.textContent.split(' (')[0];
+        if (selectedKeywords.includes(keyword)) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+}
+
 function search() {
     const q = document.getElementById("keyword").value.trim();
     const resultsDiv = document.getElementById("results");
@@ -42,7 +125,15 @@ function search() {
 
     resultsDiv.innerHTML = '<p class="loading"><i class="fas fa-spinner"></i> Recherche en cours...</p>';
 
-    fetch(`http://localhost:5000/search?q=${encodeURIComponent(q)}`)
+    // Construire l'URL avec les paramètres
+    let url = `http://localhost:5000/search?q=${encodeURIComponent(q)}`;
+    if (selectedKeywords.length > 0) {
+        selectedKeywords.forEach(keyword => {
+            url += `&source_keywords=${encodeURIComponent(keyword)}`;
+        });
+    }
+
+    fetch(url)
         .then(res => res.json())
         .then(data => {
             resultsDiv.innerHTML = "";
@@ -61,10 +152,11 @@ function search() {
 
                 div.innerHTML = `
                     <h3>🌐 ${item.url}</h3>
+                    <p><b>Source:</b> ${item.source || "N/A"}</p>
                     <p><b>Date:</b> ${item.crawled_at ? new Date(item.crawled_at).toLocaleString() : "?"}</p>
                     <p><b>Mots-clés:</b> ${(item.keywords && item.keywords.length > 0) ? item.keywords.join(", ") : "Aucun"}</p>
                     <p id="snippet-${idx}">${snippet}${fullContent.length > 300 ? "..." : ""}</p>
-                    ${fullContent.length > 300 ? `<button class="show-more-btn" onclick="toggleContent(${idx}, \`${fullContent}\`)">Voir plus</button>` : ""}
+                    ${fullContent.length > 300 ? `<button class="show-more-btn" onclick="toggleContent(${idx}, \`${fullContent.replace(/`/g, '\\`')}\`)">Voir plus</button>` : ""}
                 `;
 
                 resultsDiv.appendChild(div);
@@ -87,6 +179,9 @@ function toggleContent(idx, fullText) {
         if (btn) btn.textContent = "Voir plus";
     }
 }
+
+// Charger les mots-clés au chargement de la page
+loadKeywords();
 </script>
 
 </body>
