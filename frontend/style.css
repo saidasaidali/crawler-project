@@ -1042,6 +1042,110 @@ body {
     margin-bottom: 25px;
 }
 
+/* Analytics Dashboard */
+#analytics-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 25px;
+    border-radius: var(--radius);
+    text-align: center;
+    box-shadow: 0 8px 32px var(--shadow);
+    transition: var(--transition);
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 48px rgba(102, 126, 234, 0.4);
+}
+
+.metric-card h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.metric-card p {
+    font-size: 2.5em;
+    font-weight: 800;
+    margin: 0;
+}
+
+.chart-container {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: 0 10px 40px var(--shadow);
+    transition: var(--transition);
+}
+
+.chart-container:hover {
+    box-shadow: 0 15px 60px var(--shadow-lg);
+}
+
+.chart-container h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    color: #333;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 300px !important;
+}
+
+.recent-crawls {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: 0 10px 40px var(--shadow);
+    transition: var(--transition);
+}
+
+.recent-crawls:hover {
+    box-shadow: 0 15px 60px var(--shadow-lg);
+}
+
+.recent-crawls h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    color: #333;
+}
+
+.recent-crawls ul {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.recent-crawls li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.recent-crawls li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive for analytics */
+@media (max-width: 768px) {
+    #analytics-container {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 
 

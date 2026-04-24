@@ -117,7 +117,7 @@ def crawl_single_page(url, source):
             "source": source["url"],
             "content_type": content_type,
             "content": text,
-            "keywords_found": keywords_found,
+            "keywords": keywords_found,
             "crawled_at": datetime.now()
         })
 

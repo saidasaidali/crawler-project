@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Complet</title>
+    <title>Dashboard d'Analyse des Données</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -20,23 +20,94 @@
     </div>
 </nav>
 
-<h1>Dashboard Complet</h1>
-<div id="dashboards"></div>
+<h1>Dashboard d'Analyse des Données Collectées</h1>
+<div id="analytics-container">
+    <div class="metric-card">
+        <h3>Total Pages Crawlées</h3>
+        <p id="total-pages">Chargement...</p>
+    </div>
+    
+    <div class="chart-container">
+        <h3>Pages par Source</h3>
+        <canvas id="pages-per-source-chart"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>Fréquence des Mots-Clés</h3>
+        <canvas id="keyword-frequency-chart"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>Tendances de Crawling</h3>
+        <canvas id="crawl-trends-chart"></canvas>
+    </div>
+    
+    <div class="recent-crawls">
+        <h3>Crawls Récentes</h3>
+        <ul id="recent-list"></ul>
+    </div>
+</div>
 
 <script>
-function createChart(container, type, title, data) {
-    const canvas = document.createElement("canvas");
-    container.appendChild(canvas);
+async function fetchData(url) {
+    try {
+        const response = await fetch(url);
+        return await response.json();
+    } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+        return null;
+    }
+}
 
-    new Chart(canvas.getContext("2d"), {
-        type: type === "trend" ? "line" : "bar",
+async function loadAnalytics() {
+    // Total pages
+    const totalData = await fetchData('http://localhost:5000/analytics/total_pages');
+    if (totalData) {
+        document.getElementById('total-pages').textContent = totalData.total_pages;
+    }
+    
+    // Pages per source
+    const pagesData = await fetchData('http://localhost:5000/analytics/pages_per_source');
+    if (pagesData) {
+        createChart('pages-per-source-chart', 'bar', 'Pages par Source', pagesData);
+    }
+    
+    // Keyword frequency
+    const keywordData = await fetchData('http://localhost:5000/analytics/keyword_frequency');
+    if (keywordData) {
+        createChart('keyword-frequency-chart', 'bar', 'Fréquence des Mots-Clés', keywordData);
+    }
+    
+    // Crawl trends
+    const trendsData = await fetchData('http://localhost:5000/analytics/crawl_trends');
+    if (trendsData) {
+        createChart('crawl-trends-chart', 'line', 'Tendances de Crawling', trendsData);
+    }
+    
+    // Recent crawls
+    const recentData = await fetchData('http://localhost:5000/analytics/recent_crawls');
+    if (recentData) {
+        const list = document.getElementById('recent-list');
+        list.innerHTML = '';
+        recentData.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.url} - ${new Date(item.crawled_at).toLocaleString()}`;
+            list.appendChild(li);
+        });
+    }
+}
+
+function createChart(canvasId, type, title, data) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: type,
         data: {
             labels: Object.keys(data),
             datasets: [{
                 label: title,
                 data: Object.values(data),
-                backgroundColor: "rgba(54, 162, 235, 0.5)",
-                borderColor: "rgba(54, 162, 235, 1)",
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
             }]
         },
@@ -50,54 +121,11 @@ function createChart(container, type, title, data) {
     });
 }
 
-function loadDashboards() {
-    const container = document.getElementById("dashboards");
-    const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+loadAnalytics();
+</script>
 
-    dashboards.forEach((dash, index) => {
-        const section = document.createElement("div");
-        section.className = "dashboard-section";
-
-        // Bouton supprimer
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Supprimer";
-        deleteBtn.className = "btn btn-secondary";
-        deleteBtn.style.float = "right";
-        deleteBtn.onclick = () => deleteDashboard(index);
-
-        const title = document.createElement("h2");
-        title.textContent = `Dashboard #${index+1}`;
-        section.appendChild(deleteBtn);
-        section.appendChild(title);
-
-        // Ajouter les graphiques
-        for (const [key, chartData] of Object.entries(dash)) {
-            const chartContainer = document.createElement("div");
-            chartContainer.className = "dashboard-chart";
-            section.appendChild(chartContainer);
-
-            createChart(chartContainer, key, key, chartData);
-        }
-
-        container.appendChild(section);
-    });
-}
-
-loadDashboards();
-function deleteDashboard(index) {
-    let dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
-
-    // Supprimer du tableau
-    dashboards.splice(index, 1);
-
-    // Réenregistrer dans localStorage
-    localStorage.setItem("dashboards", JSON.stringify(dashboards));
-
-    // Recharger les dashboards
-    const container = document.getElementById("dashboards");
-    container.innerHTML = "";  // vider
-    loadDashboards();           // recharger
-}
+</body>
+</html>
 
 </script>
 

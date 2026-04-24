@@ -143,6 +143,54 @@ def chatbot():
         print("❌ ERREUR CHATBOT:", e)
         return jsonify({"message": "❌ Erreur serveur: " + str(e)}), 500
 
+# Analytics endpoints
+@app.route("/analytics/total_pages", methods=["GET"])
+def get_total_pages():
+    total = data_collection.count_documents({})
+    return jsonify({"total_pages": total})
+
+@app.route("/analytics/pages_per_source", methods=["GET"])
+def get_pages_per_source():
+    pipeline = [
+        {"$group": {"_id": "$source", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = list(data_collection.aggregate(pipeline))
+    data = {item["_id"]: item["count"] for item in result}
+    return jsonify(data)
+
+@app.route("/analytics/keyword_frequency", methods=["GET"])
+def get_keyword_frequency():
+    pipeline = [
+        {"$unwind": "$keywords"},
+        {"$group": {"_id": "$keywords", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20}
+    ]
+    result = list(data_collection.aggregate(pipeline))
+    data = {item["_id"]: item["count"] for item in result}
+    return jsonify(data)
+
+@app.route("/analytics/recent_crawls", methods=["GET"])
+def get_recent_crawls():
+    limit = int(request.args.get("limit", 10))
+    recent = list(data_collection.find({}, {"url": 1, "crawled_at": 1, "_id": 0}).sort("crawled_at", -1).limit(limit))
+    return jsonify(recent)
+
+@app.route("/analytics/crawl_trends", methods=["GET"])
+def get_crawl_trends():
+    # Group by date
+    pipeline = [
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$crawled_at"}},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    result = list(data_collection.aggregate(pipeline))
+    data = {item["_id"]: item["count"] for item in result}
+    return jsonify(data)
+
 
 
 
